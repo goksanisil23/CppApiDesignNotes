@@ -58,9 +58,10 @@ AutoTimer::~AutoTimer() {
 ```
 Since mImpl is a private member of AutoTimer, nobody else can access the members of Impl.
 
-*Note that in the case above, one would need to write a deep copy constructor as we have a pointer (no matter raw or smart) as a member variable. Otherwise the copied object would point to the exact same mImpl. If copying is not meant to be supported, then the pointer must be a unique_ptr.*
+*Note that in the case above, one would need to write a deep copy constructor as we have a pointer (no matter raw or smart) as a member variable. Otherwise the copied AutoTimer would point to the exact same mImpl. If copying is not meant to be supported, then the pointer must be a unique_ptr.*
 
-- **Singletons:** Useful for modeling resources that are inherently singular in nature (e.g. class to access the hardware, managers that provide single point of access to multiple resources)
+- **Singletons:** 
+Useful for modeling resources that are inherently singular in nature (e.g. class to access the hardware, managers that provide single point of access to multiple resources)
 It relies on creating a class with a static method that returns the same instance of the class everytime it's called. 
 Since we don't want new instances or copies of singleton objects, default constructor, copy constructor, assignment op. and destructor can be defined as private.
 
@@ -79,3 +80,77 @@ private:
 }
 ```
 
+- **Factory Methods**
+Factory classes can simplify the usage of derived classes and hide implementation details of variants from the users.
+```c++
+// -------------- renderer.h -------------- //
+class IRenderer
+{
+public:
+	virtual void Render() = 0;
+	virtual ~IRenderer() {} // always provide a virtual desctuctor
+};
+
+// --------------  opengl_renderer.hpp -------------- //
+#include "renderer.h"
+class OpenGLRenderer : public IRenderer
+{
+public:
+	~OpenGLRenderer() {}
+	void Render() { std::cout << "OpenGL Render" << std::endl; }
+};
+
+// --------------  vulkan_renderer.hpp -------------- //
+#include "renderer.h"
+class VulkanRenderer : public IRenderer
+{
+public:
+	~VulkanRenderer() {}
+	void Render() { std::cout << "Vulkan Render" << std::endl; }
+};
+
+// --------------  renderer_factory.hpp -------------- //
+#include "opengl_renderer.hpp"
+#include "vulkan_renderer.hpp"
+
+class RendererFactory {
+public:
+	IRenderer* CreateRenderer(const std::string& type) {
+		if(type == "opengl") {
+			return std::make_unique<OpenGLRenderer>();
+		}
+		if(type == "vulkan") {
+			return std::make_unique<VulkanRenderer>();
+		}
+		return NULL;
+	}
+};
+// -------------- main -------------- //
+#include "renderer_factory.hpp"
+
+std::unique_ptr<RendererFactory> renderer_factory = std::make_unique<RendererFactory>();
+
+std::unique_ptr<IRenderer> ogl_renderer = renderer_factory->CreateRenderer("opengl");
+ogl_renderer->Render();
+std::unique_ptr<IRenderer> vulkan_renderer = renderer_factory->CreateRenderer("vulkan");
+vulkan_renderer->Render();
+
+```
+Note that the Factory methods can be extended such that the user can also add a Renderer variant (say in main.cpp). This would require the factory to have a register and create functionality in order to keep track of the overall state:
+```c++
+// -------------- main -------------- //
+class DirectXRenderer() : public IRenderer
+{
+public:
+	~DirectXRenderer() {}
+	void Render() {std::cout << "DirectX Render" << std::endl;}
+
+	std::unique_ptr<IRenderer> Create() {
+		return std::make_unique<DirectXRenderer>();
+	}
+};
+
+RendererFactory::RegisterRenderer("directx", DirectXRenderer::Create);
+
+std::unique_ptr<IRenderer> directx_ren = RendererFactory::CreateRenderer("directx");
+```	
