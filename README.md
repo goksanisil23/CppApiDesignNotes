@@ -88,7 +88,7 @@ class IRenderer
 {
 public:
 	virtual void Render() = 0;
-	virtual ~IRenderer() {} // always provide a virtual desctuctor
+	virtual ~IRenderer() {} // always provide a virtual destructor
 };
 
 // --------------  opengl_renderer.hpp -------------- //
@@ -151,6 +151,15 @@ public:
 };
 
 RendererFactory::RegisterRenderer("directx", DirectXRenderer::Create);
-
 std::unique_ptr<IRenderer> directx_ren = RendererFactory::CreateRenderer("directx");
-```	
+```
+
+- **Functional Requirements & Use Cases**
+Use cases describe requirements to the API from the perspective of the user
+They doesn't mean all sorts of requirements gathering. 
+It should only contain behavorial requirements on how user should interact with the API.
+They should not propose a design, although some design elements can be derived from them.
+
+What an official use-case doc might look like:
+
+<img src="https://raw.githubusercontent.com/goksanisil23/CppApiDesignNotes/main/resources/use_cases_ATM" width=100% height=50%>
