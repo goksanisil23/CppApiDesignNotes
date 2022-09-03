@@ -136,7 +136,7 @@ std::unique_ptr<IRenderer> vulkan_renderer = renderer_factory->CreateRenderer("v
 vulkan_renderer->Render();
 
 ```
-Note that the Factory methods can be extended such that the user can also add a Renderer variant (say in main.cpp). This would require the factory to have a register and create functionality in order to keep track of the overall state:
+Note that the Factory methods can be extended such that the user can also add a Renderer variant (say in main.cpp). This would require the factory to have a register and create functionality in order to keep track of the overall state. This fits better into the "Open/Closed Principle" which states that a class should be open for extension but closed for modification.
 ```c++
 // -------------- main -------------- //
 class DirectXRenderer() : public IRenderer
@@ -163,3 +163,71 @@ They should not propose a design, although some design elements can be derived f
 What an official use-case doc might look like:
 
 <img src="https://raw.githubusercontent.com/goksanisil23/CppApiDesignNotes/main/resources/use_cases_ATM" width=100% height=50%>
+
+**Liskov Substitution Principle**
+It lets you decide whether you should choose **inheritance** during class design.
+*Rule* : If S is a subclass of T, it should be possible to exchange T objects with S objects without behavior change. 
+An example braking this rule:
+```c++
+class Ellipse {
+public:
+	virtual void SetMajorRadius(float major);
+	virtual void SetMinorRadius(float minor);
+	float GetMinorRadius() const;
+	float GetMajorRadius() const;
+private: 
+	float rMajor;
+	float rMinor;
+};
+
+class Circle: public Ellipse {
+public:
+	void SetRadius(float r) {
+		SetMajorRadius(r);
+		SetMinorRadius(r);
+	}
+	void SetMajorRadius(float r) {
+		Ellipse::SetMajorRadius(r);
+		Ellipse::SetMinorRadius(r);
+	}
+	void SetMinorRadius(float r) {
+		Ellipse::SetMajorRadius(r);
+		Ellipse::SetMinorRadius(r);
+	}	
+	float GetRadius() const {
+		return GetMajorRadius();
+	}
+}
+
+void TestEllipse(Ellipse& e) {
+	e.SetMajorRadius(10.0);
+	e.SetMinorRadius(20.0);
+	assert(e.GetMajorRadius()==10.0 && e.GetMinorRadius()==20.0);
+}
+
+Ellipse e;
+Circle c;
+TestEllipse(e);
+TestEllipse(c); // FAILS!
+```
+
+It is generally agreed that composition should be prefered over inheritance, due to:
+- Inheritance producing tighter coupling (access to protected+public members of base) whereas composition allowing looser coupling (access to only public members of base)
+- Holding a pointer to base object allows forward declaration and can reduce compile time.
+
+```c++
+
+class Circle {
+public:
+	void SetRadius(float r) {
+		mEllipse.SetMajorRadius(r);
+		mEllipse.SetMinorRadius(r);
+	}
+	float GetRadius() const {
+		return mEllipse.GetMajorRadius();
+	}
+private: 
+	Ellipse mEllipse;
+}
+
+```
